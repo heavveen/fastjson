@@ -206,8 +206,11 @@ public class ObjectArrayCodec implements ObjectSerializer, ObjectDeserializer {
                 Object element;
                 if (componentType.isInstance(value)) {
                     element = value;
-                } else {
+                } else if (value instanceof JSONArray) {
                     element = toObjectArray(parser, componentType, (JSONArray) value);
+                } else {
+                    // 处理非JSONArray但需要转换为数组类型的情况
+                    element = TypeUtils.cast(value, componentType, parser.getConfig());
                 }
 
                 Array.set(objArray, i, element);
@@ -220,7 +223,7 @@ public class ObjectArrayCodec implements ObjectSerializer, ObjectDeserializer {
                     for (int y = 0; y < valueArraySize; ++y) {
                         Object valueItem = valueArray.get(y);
                         if (valueItem == array) {
-                            valueArray.set(i, objArray);
+                            valueArray.set(y, objArray); // 修复：应该是y而不是i
                             contains = true;
                         }
                     }
@@ -233,13 +236,12 @@ public class ObjectArrayCodec implements ObjectSerializer, ObjectDeserializer {
                     element = TypeUtils.cast(value, componentType, parser.getConfig());
                 }
                 Array.set(objArray, i, element);
-
             }
         }
 
         array.setRelatedArray(objArray);
         array.setComponentType(componentType);
-        return (T) objArray; // TODO
+        return (T) objArray;
     }
 
     public int getFastMatchToken() {
